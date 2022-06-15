@@ -1,4 +1,4 @@
-module auth
+module github.com/alexjoedt/auth
 
 go 1.18
 
