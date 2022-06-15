@@ -12,7 +12,8 @@ import (
 var Auth *auth
 
 type auth struct {
-	authenticator       Authenticator
+	basicAuthenticator  BasicAuthenticator
+	bearerAuthenticator BearerAuthenticator
 	secret              string
 	domain              string
 	tokenExpirationTime time.Duration
@@ -26,20 +27,23 @@ const (
 )
 
 type AuthOpts struct {
-	Authenticator           Authenticator
+	BasicAuthenticator      BasicAuthenticator
+	BearerAuthenticator     BearerAuthenticator
 	Secret                  string
 	Domain                  string
 	TokenExpirationDuration time.Duration
 }
 
-type Authenticator interface {
+type BasicAuthenticator interface {
 	CheckBasic(username string, password string) error
+}
+
+type BearerAuthenticator interface {
 	CheckBearer(token string) error
 }
 
 func Init(a AuthOpts) *auth {
 	Auth = &auth{
-		authenticator:       a.Authenticator,
 		tokenExpirationTime: a.TokenExpirationDuration,
 		secret:              a.Secret,
 		domain:              a.Domain,
@@ -84,11 +88,11 @@ func (a *auth) authenticateBasic(base64String string) error {
 		return ErrInvalidCredentials
 	}
 
-	if a.authenticator == nil {
-		return ErrAuthenticatorNotInitialized
+	if a.basicAuthenticator != nil {
+		return a.basicAuthenticator.CheckBasic(creds[0], creds[1])
 	}
 
-	return a.authenticator.CheckBasic(creds[0], creds[1])
+	return ErrAuthenticatorNotInitialized
 }
 
 func (a *auth) authenticateBearer(token string) error {
@@ -97,8 +101,8 @@ func (a *auth) authenticateBearer(token string) error {
 		return ErrMissingToken
 	}
 
-	if a.authenticator != nil {
-		return a.authenticator.CheckBearer(token)
+	if a.bearerAuthenticator != nil {
+		return a.bearerAuthenticator.CheckBearer(token)
 	}
 
 	// As default we use built in JWT

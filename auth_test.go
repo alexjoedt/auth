@@ -68,7 +68,8 @@ func (ta *testAuthenticator) CheckBearer(token string) error {
 func initAuth() *auth {
 	ta := testAuthenticator{}
 	return Init(AuthOpts{
-		Authenticator:           &ta,
+		BasicAuthenticator:      &ta,
+		BearerAuthenticator:     &ta,
 		Secret:                  "1c2b79719568a9ba9d3392156bcabcca",
 		Domain:                  "test.local",
 		TokenExpirationDuration: time.Second * 1,
@@ -102,7 +103,7 @@ func TestAuthenticateRequest(t *testing.T) {
 	assert.NotEmpty(t, s.ExpirationDate, "should be not empty")
 
 	// Test default behavoir with built in JWT
-	Auth.authenticator = nil
+	Auth.bearerAuthenticator = nil
 	mockRequestBearer.Header.Set("Authorization", "Bearer "+s.AccessToken)
 	err = Auth.AuthenticateRequest(&mockRequestBearer)
 	assert.Nil(t, err, "shoud be nil")
