@@ -44,6 +44,8 @@ type BearerAuthenticator interface {
 
 func Init(a AuthOpts) *auth {
 	Auth = &auth{
+		basicAuthenticator:  a.BasicAuthenticator,
+		bearerAuthenticator: a.BearerAuthenticator,
 		tokenExpirationTime: a.TokenExpirationDuration,
 		secret:              a.Secret,
 		domain:              a.Domain,
