@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
@@ -66,7 +65,11 @@ func (a *auth) AuthenticateRequest(r *http.Request) error {
 	authType := AuthType(headerParts[0])
 	switch authType {
 	case AuthTypeBasic:
-		return a.authenticateBasic(headerParts[1])
+		username, pass, ok := r.BasicAuth()
+		if ok {
+			return a.authenticateBasic(username, pass)
+		}
+		return fmt.Errorf("invalid basic auth header")
 	case AuthTypeBearer:
 		return a.authenticateBearer(headerParts[1])
 	default:
@@ -74,24 +77,9 @@ func (a *auth) AuthenticateRequest(r *http.Request) error {
 	}
 }
 
-func (a *auth) authenticateBasic(base64String string) error {
-	data, err := base64.StdEncoding.DecodeString(base64String)
-	if err != nil {
-		return err
-	}
-
-	if !strings.Contains(string(data), ":") {
-		return ErrInvalidAuthHeader
-	}
-
-	creds := strings.Split(string(data), ":")
-
-	if len(creds) < 2 {
-		return ErrInvalidCredentials
-	}
-
+func (a *auth) authenticateBasic(username string, password string) error {
 	if a.basicAuthenticator != nil {
-		return a.basicAuthenticator.CheckBasic(creds[0], creds[1])
+		return a.basicAuthenticator.CheckBasic(username, password)
 	}
 
 	return ErrAuthenticatorNotInitialized
